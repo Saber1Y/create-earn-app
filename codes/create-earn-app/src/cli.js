@@ -46,12 +46,13 @@ Usage:
 
 Commands:
   doctor     Check local setup for Earn integration work
-  vaults     List Earn vaults for a chain and asset
+  vaults     List Earn vaults for a chain and asset, with mock mode
   scaffold   Placeholder for the starter-app generator
 
 Examples:
   create-earn-app doctor
   create-earn-app vaults --chainId=8453 --asset=USDC --limit=5
+  create-earn-app vaults --mock
 `);
 }
 

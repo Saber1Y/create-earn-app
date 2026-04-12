@@ -5,6 +5,29 @@ function toLimit(value, fallback) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+function getMockVaults() {
+  return [
+    {
+      name: 'Base USDC Boost',
+      protocolName: 'Morpho',
+      apy: 7.24,
+      isTransactional: true,
+    },
+    {
+      name: 'Stable Yield Core',
+      protocolName: 'Aave',
+      apy: 5.91,
+      isTransactional: true,
+    },
+    {
+      name: 'Cautious Cash',
+      protocolName: 'Euler',
+      apy: 4.38,
+      isTransactional: false,
+    },
+  ];
+}
+
 function formatApy(vault) {
   const apy = vault?.apy ?? vault?.currentApy ?? vault?.depositApy;
   if (typeof apy !== 'number') {
@@ -19,6 +42,18 @@ export async function runVaults({ env, flags, output }) {
   const asset = flags.asset ?? 'USDC';
   const limit = toLimit(flags.limit, 5);
   const sortBy = flags.sortBy ?? 'apy';
+
+  if (flags.mock) {
+    output.log(`Using mock Earn vaults for chain ${chainId} and asset ${asset}...`);
+    for (const vault of getMockVaults().slice(0, limit)) {
+      const name = vault?.name ?? vault?.symbol ?? 'Unnamed vault';
+      const protocol = vault?.protocolName ?? vault?.protocol ?? 'unknown protocol';
+      const transactional = vault?.isTransactional ? 'deposit-ready' : 'view-only';
+      output.log(`- ${name} | ${protocol} | APY ${formatApy(vault)} | ${transactional}`);
+    }
+    return;
+  }
+
   const url = buildVaultsUrl({ chainId, asset, limit, sortBy, env });
 
   output.log(`Fetching Earn vaults for chain ${chainId} and asset ${asset}...`);

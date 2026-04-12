@@ -7,6 +7,7 @@
 - `doctor` checks the local setup for common integration issues.
 - `vaults` lists Earn vaults for a chain and asset.
 - `scaffold` is the hook for the next step: generating a starter app template.
+- `vaults --mock` gives a local-only sample output for demoing the CLI.
 
 ## Current scope
 
