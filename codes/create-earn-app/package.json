@@ -1,0 +1,18 @@
+{
+  "name": "create-earn-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "CLI starter for LI.FI Earn developer tooling",
+  "bin": {
+    "create-earn-app": "./src/cli.js"
+  },
+  "scripts": {
+    "doctor": "node ./src/cli.js doctor",
+    "vaults": "node ./src/cli.js vaults",
+    "scaffold": "node ./src/cli.js scaffold"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
