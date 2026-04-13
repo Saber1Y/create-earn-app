@@ -47,13 +47,15 @@ Usage:
 Commands:
   doctor     Check local setup for Earn integration work
   vaults     List Earn vaults for a chain and asset, with mock/json modes
-  scaffold   Placeholder for the starter-app generator
+  scaffold   Generate a minimal Earn starter project
 
 Examples:
   create-earn-app doctor
   create-earn-app vaults --chainId=8453 --asset=USDC --limit=5
   create-earn-app vaults --mock
   create-earn-app vaults --mock --json
+  create-earn-app scaffold my-earn-app
+  create-earn-app scaffold my-earn-app --force
 `);
 }
 

@@ -6,7 +6,7 @@
 
 - `doctor` checks the local setup for common integration issues.
 - `vaults` lists Earn vaults for a chain and asset.
-- `scaffold` is the hook for the next step: generating a starter app template.
+- `scaffold` generates a minimal starter app folder.
 - `vaults --mock` gives a local-only sample output for demoing the CLI.
 - `vaults --json` returns machine-readable output for scripts and tooling.
 
@@ -17,6 +17,8 @@
 - One asset target: USDC by default
 - One flow: discover -> inspect -> deposit-ready setup
 
-## Next step
+## Quick scaffold
 
-We will turn this into a real generator that can scaffold a working Next.js app with Earn discovery and deposit flows.
+```bash
+node ./src/cli.js scaffold my-earn-app
+```
