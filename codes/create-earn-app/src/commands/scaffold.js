@@ -1,6 +1,15 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+function toPackageName(value) {
+  const normalized = value
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return normalized || 'my-earn-app';
+}
+
 function getProjectPackageJson(name) {
   const packageJson = {
     name,
@@ -223,14 +232,16 @@ export async function runScaffold({ flags, positional, output }) {
   const name = flags.name ?? positional[0] ?? 'my-earn-app';
   const force = Boolean(flags.force);
   const targetDir = path.resolve(process.cwd(), name);
+  const projectName = path.basename(targetDir);
+  const packageName = toPackageName(projectName);
   const srcDir = path.join(targetDir, 'src');
 
   await mkdir(srcDir, { recursive: true });
 
   try {
-    await writeProjectFile(path.join(targetDir, 'package.json'), getProjectPackageJson(name), force);
+    await writeProjectFile(path.join(targetDir, 'package.json'), getProjectPackageJson(packageName), force);
     await writeProjectFile(path.join(targetDir, '.env.example'), 'LIFI_API_KEY=\nEARN_CHAIN_ID=8453\nEARN_ASSET=USDC\n', force);
-    await writeProjectFile(path.join(targetDir, 'README.md'), getProjectReadme(name), force);
+    await writeProjectFile(path.join(targetDir, 'README.md'), getProjectReadme(projectName), force);
     await writeProjectFile(path.join(srcDir, 'earn.js'), getEarnClientModule(), force);
     await writeProjectFile(path.join(srcDir, 'vaults.js'), getVaultsModule(), force);
     await writeProjectFile(path.join(srcDir, 'index.js'), getProjectEntryPoint(), force);
