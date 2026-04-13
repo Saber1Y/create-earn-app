@@ -39,6 +39,45 @@ console.log('- next step: wire vault discovery + quote + execute flow');
 `;
 }
 
+function getEarnClientModule() {
+  return `const EARN_BASE_URL = process.env.LIFI_EARN_BASE_URL ?? 'https://earn.li.fi';
+
+export function getEarnHeaders() {
+  const headers = {
+    Accept: 'application/json',
+  };
+
+  if (process.env.LIFI_API_KEY) {
+    headers['x-lifi-api-key'] = process.env.LIFI_API_KEY;
+  }
+
+  return headers;
+}
+
+export function buildEarnUrl(pathname, params = {}) {
+  const url = new URL(pathname, EARN_BASE_URL);
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null || value === '') {
+      continue;
+    }
+    url.searchParams.set(key, String(value));
+  }
+  return url;
+}
+
+export async function fetchEarn(pathname, params = {}) {
+  const url = buildEarnUrl(pathname, params);
+  const response = await fetch(url, { headers: getEarnHeaders() });
+
+  if (!response.ok) {
+    throw new Error(\`Earn request failed (\${response.status})\`);
+  }
+
+  return response.json();
+}
+`;
+}
+
 async function writeProjectFile(target, content, force) {
   await writeFile(target, content, { flag: force ? 'w' : 'wx' });
 }
@@ -55,6 +94,7 @@ export async function runScaffold({ flags, positional, output }) {
     await writeProjectFile(path.join(targetDir, 'package.json'), getProjectPackageJson(name), force);
     await writeProjectFile(path.join(targetDir, '.env.example'), 'LIFI_API_KEY=\nEARN_CHAIN_ID=8453\nEARN_ASSET=USDC\n', force);
     await writeProjectFile(path.join(targetDir, 'README.md'), getProjectReadme(name), force);
+    await writeProjectFile(path.join(srcDir, 'earn.js'), getEarnClientModule(), force);
     await writeProjectFile(path.join(srcDir, 'index.js'), getProjectEntryPoint(), force);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
