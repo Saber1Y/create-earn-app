@@ -28,13 +28,51 @@ function getMockVaults() {
   ];
 }
 
-function formatApy(vault) {
+function getApy(vault) {
   const apy = vault?.apy ?? vault?.currentApy ?? vault?.depositApy;
-  if (typeof apy !== 'number') {
+  return typeof apy === 'number' ? apy : null;
+}
+
+function formatApy(vault) {
+  const apy = getApy(vault);
+  if (apy === null) {
     return 'n/a';
   }
 
   return `${apy.toFixed(2)}%`;
+}
+
+function toOutputVault(vault) {
+  const apy = getApy(vault);
+  const name = vault?.name ?? vault?.symbol ?? 'Unnamed vault';
+  const protocol = vault?.protocolName ?? vault?.protocol ?? 'unknown protocol';
+
+  return {
+    name,
+    protocol,
+    apyPercent: apy,
+    isTransactional: Boolean(vault?.isTransactional),
+    status: vault?.isTransactional ? 'deposit-ready' : 'view-only',
+  };
+}
+
+function printTextVaults(vaults, output) {
+  for (const vault of vaults) {
+    const name = vault?.name ?? vault?.symbol ?? 'Unnamed vault';
+    const protocol = vault?.protocolName ?? vault?.protocol ?? 'unknown protocol';
+    const transactional = vault?.isTransactional ? 'deposit-ready' : 'view-only';
+    output.log(`- ${name} | ${protocol} | APY ${formatApy(vault)} | ${transactional}`);
+  }
+}
+
+function printJsonVaults(vaults, output, meta) {
+  const data = {
+    ...meta,
+    count: vaults.length,
+    vaults: vaults.map(toOutputVault),
+  };
+
+  output.log(JSON.stringify(data, null, 2));
 }
 
 export async function runVaults({ env, flags, output }) {
@@ -42,15 +80,22 @@ export async function runVaults({ env, flags, output }) {
   const asset = flags.asset ?? 'USDC';
   const limit = toLimit(flags.limit, 5);
   const sortBy = flags.sortBy ?? 'apy';
+  const wantsJson = Boolean(flags.json);
 
   if (flags.mock) {
-    output.log(`Using mock Earn vaults for chain ${chainId} and asset ${asset}...`);
-    for (const vault of getMockVaults().slice(0, limit)) {
-      const name = vault?.name ?? vault?.symbol ?? 'Unnamed vault';
-      const protocol = vault?.protocolName ?? vault?.protocol ?? 'unknown protocol';
-      const transactional = vault?.isTransactional ? 'deposit-ready' : 'view-only';
-      output.log(`- ${name} | ${protocol} | APY ${formatApy(vault)} | ${transactional}`);
+    const mockVaults = getMockVaults().slice(0, limit);
+
+    if (wantsJson) {
+      printJsonVaults(mockVaults, output, {
+        source: 'mock',
+        chainId: String(chainId),
+        asset: String(asset),
+      });
+      return;
     }
+
+    output.log(`Using mock Earn vaults for chain ${chainId} and asset ${asset}...`);
+    printTextVaults(mockVaults, output);
     return;
   }
 
@@ -71,17 +116,21 @@ export async function runVaults({ env, flags, output }) {
     const payload = await response.json();
     const vaults = normalizeVaultList(payload).slice(0, limit);
 
+    if (wantsJson) {
+      printJsonVaults(vaults, output, {
+        source: 'live',
+        chainId: String(chainId),
+        asset: String(asset),
+      });
+      return;
+    }
+
     if (vaults.length === 0) {
       output.log('No vaults were returned.');
       return;
     }
 
-    for (const vault of vaults) {
-      const name = vault?.name ?? vault?.symbol ?? 'Unnamed vault';
-      const protocol = vault?.protocolName ?? vault?.protocol ?? 'unknown protocol';
-      const transactional = vault?.isTransactional ? 'deposit-ready' : 'view-only';
-      output.log(`- ${name} | ${protocol} | APY ${formatApy(vault)} | ${transactional}`);
-    }
+    printTextVaults(vaults, output);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     output.log(`Unable to reach the Earn API: ${message}`);
