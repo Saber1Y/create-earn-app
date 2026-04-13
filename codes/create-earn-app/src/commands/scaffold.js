@@ -143,6 +143,28 @@ function loadEnvFile() {
 
 loadEnvFile();
 
+function parseCliFlags(argv) {
+  const options = {};
+
+  for (const arg of argv) {
+    if (!arg.startsWith('--')) {
+      continue;
+    }
+
+    const separatorIndex = arg.indexOf('=');
+    if (separatorIndex === -1) {
+      options[arg.slice(2)] = true;
+      continue;
+    }
+
+    const key = arg.slice(2, separatorIndex);
+    const value = arg.slice(separatorIndex + 1);
+    options[key] = value;
+  }
+
+  return options;
+}
+
 function normalizeVaultList(payload) {
   if (Array.isArray(payload)) {
     return payload;
@@ -215,7 +237,12 @@ function isDirectRun() {
 }
 
 if (isDirectRun()) {
-  printTransactionalVaults().catch((error) => {
+  const flags = parseCliFlags(process.argv.slice(2));
+  printTransactionalVaults({
+    chainId: flags.chainId,
+    asset: flags.asset,
+    limit: flags.limit,
+  }).catch((error) => {
     const message = error instanceof Error ? error.message : String(error);
     console.error('Failed to fetch transactional vaults:', message);
     process.exitCode = 1;
