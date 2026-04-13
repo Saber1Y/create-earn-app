@@ -78,6 +78,74 @@ export async function fetchEarn(pathname, params = {}) {
 `;
 }
 
+function getVaultsModule() {
+  return `import { fetchEarn } from './earn.js';
+
+function normalizeVaultList(payload) {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (Array.isArray(payload?.data)) {
+    return payload.data;
+  }
+
+  if (Array.isArray(payload?.data?.vaults)) {
+    return payload.data.vaults;
+  }
+
+  if (Array.isArray(payload?.vaults)) {
+    return payload.vaults;
+  }
+
+  return [];
+}
+
+function getApy(vault) {
+  const apy = vault?.apy ?? vault?.currentApy ?? vault?.depositApy;
+  return typeof apy === 'number' ? apy : null;
+}
+
+function formatApy(vault) {
+  const apy = getApy(vault);
+  return apy === null ? 'n/a' : \`\${apy.toFixed(2)}%\`;
+}
+
+export async function listTransactionalVaults(options = {}) {
+  const chainId = options.chainId ?? process.env.EARN_CHAIN_ID ?? '8453';
+  const asset = options.asset ?? process.env.EARN_ASSET ?? 'USDC';
+  const limit = Number(options.limit ?? process.env.EARN_LIMIT ?? 5);
+
+  const payload = await fetchEarn('/v1/earn/vaults', {
+    chainId: String(chainId),
+    asset: String(asset),
+    sortBy: 'apy',
+    limit: String(limit),
+  });
+
+  return normalizeVaultList(payload)
+    .filter((vault) => Boolean(vault?.isTransactional))
+    .slice(0, limit);
+}
+
+export async function printTransactionalVaults(options = {}) {
+  const vaults = await listTransactionalVaults(options);
+
+  if (vaults.length === 0) {
+    console.log('No transactional vaults found.');
+    return;
+  }
+
+  console.log('Top transactional vaults:');
+  for (const vault of vaults) {
+    const name = vault?.name ?? vault?.symbol ?? 'Unnamed vault';
+    const protocol = vault?.protocolName ?? vault?.protocol ?? 'unknown protocol';
+    console.log(\`- \${name} | \${protocol} | APY \${formatApy(vault)}\`);
+  }
+}
+`;
+}
+
 async function writeProjectFile(target, content, force) {
   await writeFile(target, content, { flag: force ? 'w' : 'wx' });
 }
@@ -95,6 +163,7 @@ export async function runScaffold({ flags, positional, output }) {
     await writeProjectFile(path.join(targetDir, '.env.example'), 'LIFI_API_KEY=\nEARN_CHAIN_ID=8453\nEARN_ASSET=USDC\n', force);
     await writeProjectFile(path.join(targetDir, 'README.md'), getProjectReadme(name), force);
     await writeProjectFile(path.join(srcDir, 'earn.js'), getEarnClientModule(), force);
+    await writeProjectFile(path.join(srcDir, 'vaults.js'), getVaultsModule(), force);
     await writeProjectFile(path.join(srcDir, 'index.js'), getProjectEntryPoint(), force);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
