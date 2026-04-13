@@ -99,8 +99,40 @@ export async function fetchEarn(pathname, params = {}) {
 }
 
 function getVaultsModule() {
-  return `import { pathToFileURL } from 'node:url';
+  return `import { existsSync, readFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import { fetchEarn } from './earn.js';
+
+function loadEnvFile() {
+  if (!existsSync('.env')) {
+    return;
+  }
+
+  const content = readFileSync('.env', 'utf8');
+  const lines = content.split(/\\r?\\n/);
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) {
+      continue;
+    }
+
+    const separatorIndex = trimmed.indexOf('=');
+    if (separatorIndex === -1) {
+      continue;
+    }
+
+    const key = trimmed.slice(0, separatorIndex).trim();
+    const value = trimmed.slice(separatorIndex + 1).trim();
+    if (!key || key in process.env) {
+      continue;
+    }
+
+    process.env[key] = value.replace(/^['"]|['"]$/g, '');
+  }
+}
+
+loadEnvFile();
 
 function normalizeVaultList(payload) {
   if (Array.isArray(payload)) {
