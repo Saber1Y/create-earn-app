@@ -9,7 +9,7 @@ function getProjectPackageJson(name) {
     type: 'module',
     scripts: {
       start: 'node src/index.js',
-      vaults: 'node src/index.js',
+      vaults: 'node src/vaults.js',
     },
   };
 
@@ -99,7 +99,8 @@ export async function fetchEarn(pathname, params = {}) {
 }
 
 function getVaultsModule() {
-  return `import { fetchEarn } from './earn.js';
+  return `import { pathToFileURL } from 'node:url';
+import { fetchEarn } from './earn.js';
 
 function normalizeVaultList(payload) {
   if (Array.isArray(payload)) {
@@ -162,6 +163,22 @@ export async function printTransactionalVaults(options = {}) {
     const protocol = vault?.protocolName ?? vault?.protocol ?? 'unknown protocol';
     console.log(\`- \${name} | \${protocol} | APY \${formatApy(vault)}\`);
   }
+}
+
+function isDirectRun() {
+  if (!process.argv[1]) {
+    return false;
+  }
+
+  return import.meta.url === pathToFileURL(process.argv[1]).href;
+}
+
+if (isDirectRun()) {
+  printTransactionalVaults().catch((error) => {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('Failed to fetch transactional vaults:', message);
+    process.exitCode = 1;
+  });
 }
 `;
 }
