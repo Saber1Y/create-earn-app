@@ -257,5 +257,5 @@ export async function runScaffold({ flags, positional, output }) {
   }
 
   output.log(`Scaffold generated at ${targetDir}`);
-  output.log('Run `npm install` then `npm start` inside the generated folder.');
+  output.log('Run `npm install` then `npm run vaults` inside the generated folder.');
 }
